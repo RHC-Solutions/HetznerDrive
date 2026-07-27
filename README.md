@@ -60,8 +60,17 @@ Each backend gets flags suited to it rather than one generic set:
 
 ## Download
 
-Run the installer (`HetznerDrive-Setup.exe`); it installs WinFsp automatically if it's missing.
-Windows 10/11 x64. The app checks for updates on startup and via **About → Check for updates**.
+**[⬇ HetznerDrive-Setup.exe (0.1.0 preview)](https://github.com/RHC-Solutions/HetznerDrive/releases/download/v0.1.0/HetznerDrive-Setup.exe)**
+&nbsp;·&nbsp; [All releases](https://github.com/RHC-Solutions/HetznerDrive/releases)
+
+Run the installer; it installs WinFsp automatically if it's missing. Windows 10/11 x64.
+
+> 0.1.0 is a **prerelease**: unsigned, so SmartScreen will warn, and not yet tested against real
+> Hetzner hardware. Two things follow from the prerelease flag and are expected, not bugs — the
+> `releases/latest/download/…` shortcut does not resolve, and the in-app updater (which queries the
+> *latest* release) will not offer it. Both start working with the first stable release, at which
+> point the link above becomes
+> `releases/latest/download/HetznerDrive-Setup.exe`.
 
 ## How it works
 
