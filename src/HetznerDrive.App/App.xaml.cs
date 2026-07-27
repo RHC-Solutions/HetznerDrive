@@ -1,0 +1,140 @@
+using System.Windows;
+using Hardcodet.Wpf.TaskbarNotification;
+using HetznerDrive.App.Services;
+using HetznerDrive.App.ViewModels;
+using HetznerDrive.App.Views;
+using HetznerDrive.Core;
+
+namespace HetznerDrive.App;
+
+public partial class App : Application
+{
+    private const string MutexName = "HetznerDrive.SingleInstance.v1";
+
+    private Mutex? _singleInstanceMutex;
+    private AppController? _controller;
+    private MainWindow? _mainWindow;
+    private TaskbarIcon? _trayIcon;
+
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+
+        // Headless XAML check: construct every window, write a report, exit with the verdict.
+        // Runs before the single-instance mutex so it works while the app is already open.
+        var selfTestIdx = Array.FindIndex(e.Args, a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase));
+        if (selfTestIdx >= 0)
+        {
+            var output = e.Args.Length > selfTestIdx + 1 ? e.Args[selfTestIdx + 1] : null;
+            Shutdown(WindowSelfTest.Run(output));
+            return;
+        }
+
+        // Explorer right-click verb: run the action standalone (no UI, no single-instance lock) and exit.
+        var shellIdx = Array.FindIndex(e.Args, a => a.Equals("--shell", StringComparison.OrdinalIgnoreCase));
+        if (shellIdx >= 0 && e.Args.Length >= shellIdx + 3)
+        {
+            ShellCommand.Run(e.Args[shellIdx + 1], e.Args[shellIdx + 2]);
+            Shutdown();
+            return;
+        }
+
+        _singleInstanceMutex = new Mutex(initiallyOwned: true, MutexName, out var isNew);
+        if (!isNew)
+        {
+            MessageBox.Show("HetznerDrive is already running (see the system tray).",
+                "HetznerDrive", MessageBoxButton.OK, MessageBoxImage.Information);
+            Shutdown();
+            return;
+        }
+
+        var silentAutoMount = e.Args.Contains("--silent-automount", StringComparer.OrdinalIgnoreCase);
+
+        _controller = new AppController();
+        _controller.Initialize();
+
+        var vm = new MainViewModel(_controller);
+        _mainWindow = new MainWindow(vm, _controller);
+
+        _trayIcon = TrayIconFactory.Create(new TrayActions(
+            Open: ShowMainWindow,
+            Add: () => WithMainWindow(w => w.InvokeAdd()),
+            Edit: () => WithMainWindow(w => w.InvokeEdit()),
+            Delete: () => WithMainWindow(w => w.InvokeDelete()),
+            MountAuto: () => _ = _controller.MountAutoAsync(),
+            UnmountAll: () => _ = _controller.ShutdownAsync(),
+            Settings: () => WithMainWindow(w => w.InvokeSettings()),
+            About: () => WithMainWindow(w => w.InvokeAbout()),
+            Exit: ExitApp,
+            HasSelection: () => _mainWindow?.HasSelection ?? false));
+
+        // Register the scoped Explorer right-click menu, and keep it in sync with the mappings.
+        ShellMenu.Register(Environment.ProcessPath, _controller.GetShellRoots());
+        _controller.MappingsChanged += () =>
+            ShellMenu.Register(Environment.ProcessPath, _controller.GetShellRoots());
+
+        if (!silentAutoMount)
+            ShowMainWindow();
+
+        // Auto-mount flagged drives on every launch.
+        _ = _controller.MountAutoAsync();
+
+        // Offer updates on interactive launches when enabled (silent on failure / when current).
+        if (!silentAutoMount && _controller.Settings.AutoCheckForUpdates)
+            _ = UpdateCoordinator.CheckAsync(_mainWindow, userInitiated: false);
+    }
+
+    /// <summary>
+    /// Runs a tray action that opens a dialog. The dialogs own themselves to the main window, so it
+    /// has to be visible first — otherwise the dialog would parent to a hidden window.
+    /// </summary>
+    private void WithMainWindow(Action<MainWindow> action)
+    {
+        if (_mainWindow is null) return;
+        ShowMainWindow();
+        action(_mainWindow);
+    }
+
+    private void ShowMainWindow()
+    {
+        if (_mainWindow is null) return;
+        _mainWindow.Show();
+        _mainWindow.WindowState = WindowState.Normal;
+        _mainWindow.Activate();
+    }
+
+    private void ExitApp()
+    {
+        if (_controller is not null)
+        {
+            try { _controller.ShutdownAsync().GetAwaiter().GetResult(); }
+            catch { /* best-effort unmount */ }
+        }
+        if (_mainWindow is not null)
+            _mainWindow.AllowClose = true;
+        _trayIcon?.Dispose();
+        Shutdown();
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _trayIcon?.Dispose();
+        _singleInstanceMutex?.ReleaseMutex();
+        _singleInstanceMutex?.Dispose();
+        base.OnExit(e);
+    }
+
+    /// <summary>Registers/removes the logon Run entry; called from the Settings dialog.</summary>
+    public static void ApplyAutoMountSetting(bool enabled)
+    {
+        var exePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(exePath))
+            return;
+        try { new AutoMountManager(exePath).SetEnabled(enabled); }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Could not update the login task: {ex.Message}",
+                "HetznerDrive", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+}

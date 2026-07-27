@@ -1,0 +1,3 @@
+rclone v1.74.4
+Source: https://downloads.rclone.org/rclone-current-windows-amd64.zip
+Fetched: 2026-07-27

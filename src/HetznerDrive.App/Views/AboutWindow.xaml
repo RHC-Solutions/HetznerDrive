@@ -1,0 +1,48 @@
+<Window x:Class="HetznerDrive.App.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        mc:Ignorable="d"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Background="{StaticResource WC.Brush.BgPrimary}"
+        Title="About HetznerDrive" Width="420" SizeToContent="Height" Icon="/Assets/hetznerdrive.ico"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
+    <StackPanel Margin="20">
+        <StackPanel Orientation="Horizontal">
+            <Image Source="/Assets/logo.png" Width="48" Height="48" Margin="0,0,12,0"
+                   VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="HetznerDrive" FontSize="20" FontWeight="Bold"/>
+                <TextBlock x:Name="VersionText" Margin="0,2,0,0" Foreground="{StaticResource WC.Brush.TextSecondary}"/>
+            </StackPanel>
+        </StackPanel>
+
+        <TextBlock Margin="0,14,0,0" TextWrapping="Wrap"
+                   Text="Mount a Hetzner Storage Box or Object Storage bucket as a Windows drive or an on-demand folder — over SFTP, SMB, WebDAV or S3."/>
+
+        <Separator Margin="0,14"/>
+
+        <StackPanel Orientation="Horizontal" Margin="0,2">
+            <TextBlock Text="Publisher: " FontWeight="SemiBold"/>
+            <TextBlock Text="RHC Solutions"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,2">
+            <TextBlock Text="Website: " FontWeight="SemiBold"/>
+            <TextBlock><Hyperlink Click="OnOpenWebsite">https://rhcsolutions.com/</Hyperlink></TextBlock>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,2">
+            <TextBlock Text="Source: " FontWeight="SemiBold"/>
+            <TextBlock><Hyperlink Click="OnOpenGitHub">github.com/RHC-Solutions/HetznerDrive</Hyperlink></TextBlock>
+        </StackPanel>
+
+        <TextBlock x:Name="CopyrightText" Margin="0,14,0,0" Foreground="{StaticResource WC.Brush.TextSecondary}" FontSize="11"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="Check for updates" Click="OnCheckForUpdates" x:Name="CheckButton"
+                    Style="{StaticResource WC.Button.Accent}" Padding="14,6" Margin="0,0,8,0"/>
+            <Button Content="Close" IsCancel="True" IsDefault="True" Padding="18,6"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

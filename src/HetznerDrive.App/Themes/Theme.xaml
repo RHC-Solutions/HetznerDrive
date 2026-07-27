@@ -1,0 +1,157 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Dark palette keyed to the Hetzner brand red. -->
+    <Color x:Key="WC.Color.Accent">#FFD50C2D</Color>
+    <!-- ModernWpf reads SystemAccentColor for accent-tinted chrome; match the app accent. -->
+    <Color x:Key="SystemAccentColor">#FFD50C2D</Color>
+
+    <SolidColorBrush x:Key="WC.Brush.BgPrimary"   Color="#FF16161C"/>
+    <SolidColorBrush x:Key="WC.Brush.BgSecondary" Color="#FF1E1E26"/>
+    <SolidColorBrush x:Key="WC.Brush.BgTertiary"  Color="#FF2A2A34"/>
+    <SolidColorBrush x:Key="WC.Brush.TextPrimary"   Color="#FFEAEAEA"/>
+    <SolidColorBrush x:Key="WC.Brush.TextSecondary" Color="#FFA0A0A0"/>
+    <SolidColorBrush x:Key="WC.Brush.Accent"      Color="#FFD50C2D"/>
+    <SolidColorBrush x:Key="WC.Brush.AccentHover" Color="#FFF23558"/>
+    <SolidColorBrush x:Key="WC.Brush.AccentMuted" Color="#33D50C2D"/>
+    <SolidColorBrush x:Key="WC.Brush.Success" Color="#FF4ADE80"/>
+    <SolidColorBrush x:Key="WC.Brush.Warning" Color="#FFFBBF24"/>
+    <SolidColorBrush x:Key="WC.Brush.Danger"  Color="#FFEF4444"/>
+    <SolidColorBrush x:Key="WC.Brush.Border"  Color="#FF32323E"/>
+    <SolidColorBrush x:Key="WC.Brush.RowSelected" Color="#22D50C2D"/>
+    <SolidColorBrush x:Key="WC.Brush.RowHover"    Color="#FF24242E"/>
+
+    <FontFamily x:Key="WC.Font.Sans">Segoe UI</FontFamily>
+    <FontFamily x:Key="WC.Font.Mono">Cascadia Mono, Consolas, Courier New</FontFamily>
+
+    <!-- Plain TextBlocks default to light text on the dark background. -->
+    <Style TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource WC.Brush.TextPrimary}"/>
+        <Setter Property="FontFamily" Value="{StaticResource WC.Font.Sans}"/>
+        <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <!-- Base button: borderless, rounded, tertiary fill (matches WC.Button.Base). -->
+    <Style x:Key="WC.Button" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource WC.Brush.BgTertiary}"/>
+        <Setter Property="Foreground" Value="{StaticResource WC.Brush.TextPrimary}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Padding" Value="14,7"/>
+        <Setter Property="FontFamily" Value="{StaticResource WC.Font.Sans}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource WC.Brush.Border}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Make plain buttons use the base style by default. -->
+    <Style TargetType="Button" BasedOn="{StaticResource WC.Button}"/>
+
+    <Style x:Key="WC.Button.Accent" TargetType="Button" BasedOn="{StaticResource WC.Button}">
+        <Setter Property="Background" Value="{StaticResource WC.Brush.Accent}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource WC.Brush.AccentHover}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="WC.Button.Danger" TargetType="Button" BasedOn="{StaticResource WC.Button}">
+        <Setter Property="Background" Value="{StaticResource WC.Brush.Danger}"/>
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
+
+    <!-- Heading / subtitle text helpers. -->
+    <Style x:Key="WC.Heading" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource WC.Brush.TextPrimary}"/>
+        <Setter Property="FontFamily" Value="{StaticResource WC.Font.Sans}"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="WC.Subtitle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource WC.Brush.TextSecondary}"/>
+        <Setter Property="FontFamily" Value="{StaticResource WC.Font.Sans}"/>
+        <Setter Property="FontSize" Value="11"/>
+    </Style>
+
+    <!-- Accent tab bar used in window/dialog headers. -->
+    <Style x:Key="WC.AccentBar" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource WC.Brush.Accent}"/>
+        <Setter Property="Width" Value="4"/>
+        <Setter Property="CornerRadius" Value="2"/>
+    </Style>
+
+    <!-- Section/header/footer bar. -->
+    <Style x:Key="WC.Bar" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource WC.Brush.BgSecondary}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource WC.Brush.Border}"/>
+    </Style>
+
+    <!--
+        Mapping-list row. ModernWpf's stock ListViewItem paints selection with a light accent-tinted
+        fill designed for dark text, but every cell here is a TextBlock using the light TextPrimary
+        brush — so a selected row rendered as light-on-light and became unreadable. Retemplating
+        (rather than overriding ModernWpf's internal resource keys) keeps the text brush untouched
+        and uses the subtle RowSelected / RowHover tints the palette already defines for this.
+    -->
+    <Style x:Key="WC.MappingRow" TargetType="ListViewItem">
+        <Setter Property="Foreground" Value="{StaticResource WC.Brush.TextPrimary}"/>
+        <Setter Property="FontFamily" Value="{StaticResource WC.Font.Sans}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="0,7"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <Border x:Name="bd" Background="Transparent"
+                            BorderBrush="{StaticResource WC.Brush.Border}"
+                            BorderThickness="0,0,0,1"
+                            Padding="{TemplateBinding Padding}">
+                        <!-- GridViewRowPresenter is what lays the cells out into the GridView's
+                             columns; without it a retemplated row renders as a single blob. -->
+                        <GridViewRowPresenter
+                            Content="{TemplateBinding Content}"
+                            Columns="{Binding View.Columns, RelativeSource={RelativeSource AncestorType={x:Type ListView}}}"
+                            VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource WC.Brush.RowHover}"/>
+                        </Trigger>
+                        <!-- Selection last so it wins over hover when both apply. -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource WC.Brush.RowSelected}"/>
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource WC.Brush.Accent}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

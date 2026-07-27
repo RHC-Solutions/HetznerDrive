@@ -1,0 +1,4 @@
+winfsp-2.1.25156.msi
+Release: v2.1
+Source: https://github.com/winfsp/winfsp/releases/download/v2.1/winfsp-2.1.25156.msi
+Fetched: 2026-07-27

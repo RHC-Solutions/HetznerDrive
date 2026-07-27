@@ -1,0 +1,259 @@
+<Window x:Class="HetznerDrive.App.Views.MappingEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:conv="clr-namespace:HetznerDrive.App.Views"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        mc:Ignorable="d"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Background="{StaticResource WC.Brush.BgPrimary}"
+        Title="{Binding Title}" Width="560" Height="700" Icon="/Assets/hetznerdrive.ico"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:MappingModeToDisplayConverter x:Key="ModeToText"/>
+        <conv:ProductToDisplayConverter x:Key="ProductToText"/>
+        <conv:ProtocolToDisplayConverter x:Key="ProtocolToText"/>
+        <Style TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="Foreground" Value="{StaticResource WC.Brush.TextPrimary}"/>
+            <Setter Property="FontFamily" Value="{StaticResource WC.Font.Sans}"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{StaticResource WC.Brush.TextSecondary}"/>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,10,16,16">
+            <Button Content="Save" Click="OnSave" IsDefault="True" Style="{StaticResource WC.Button.Accent}"
+                    Padding="18,6" Margin="0,0,8,0"/>
+            <Button Content="Cancel" IsCancel="True" Padding="18,6"/>
+        </StackPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,16,16,0">
+        <StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Display name"/>
+                <!-- PropertyChanged, not the LostFocus default: the folder-location preview below is
+                     derived from this and should follow what you type. -->
+                <TextBox   Grid.Row="0" Grid.Column="1" Margin="0,4"
+                           Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <!-- Product -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Hetzner product" VerticalAlignment="Top" Margin="0,10,10,0"/>
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,4">
+                    <ComboBox ItemsSource="{Binding Products}" SelectedItem="{Binding Product}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource ProductToText}}" Margin="0"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{Binding ProductDescription}" Style="{StaticResource Hint}"/>
+                </StackPanel>
+
+                <!-- ===== Storage Box fields ===== -->
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Username *"
+                           Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}"/>
+                <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,4"
+                            Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}">
+                    <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="For example u123456, or a sub-account like u123456-sub1."/>
+                    <TextBlock Style="{StaticResource Hint}">
+                        <Run Text="Host:"/><Run Text=" "/><Run Text="{Binding ResolvedHost, Mode=OneWay}" FontWeight="SemiBold"/>
+                        <Run Text="  ·  SMB share:"/><Run Text=" "/><Run Text="{Binding ResolvedShare, Mode=OneWay}" FontWeight="SemiBold"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Protocol" VerticalAlignment="Top" Margin="0,10,10,0"
+                           Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}"/>
+                <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,4"
+                            Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}">
+                    <ComboBox ItemsSource="{Binding StorageBoxProtocols}" SelectedItem="{Binding Protocol}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource ProtocolToText}}" Margin="0"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{Binding ProtocolDescription}" Style="{StaticResource Hint}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button x:Name="BenchmarkButton" Content="Test speeds now" Click="OnBenchmark" Padding="12,3"/>
+                    </StackPanel>
+                    <Border Margin="0,6,0,0" Padding="8,6" CornerRadius="4"
+                            Background="{StaticResource WC.Brush.BgTertiary}"
+                            Visibility="{Binding HasBenchmarkResult, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding BenchmarkResult}" TextWrapping="Wrap" FontSize="11"
+                                   FontFamily="{StaticResource WC.Font.Mono}" Margin="0"/>
+                    </Border>
+                </StackPanel>
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Password *"
+                           Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}"/>
+                <PasswordBox Grid.Row="4" Grid.Column="1" Margin="0,4" x:Name="PasswordBoxCtl"
+                             Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}"/>
+
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="SSH key (optional)" VerticalAlignment="Top" Margin="0,10,10,0"
+                           Visibility="{Binding ShowSshKeyFields, Converter={StaticResource BoolToVis}}"/>
+                <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,4"
+                            Visibility="{Binding ShowSshKeyFields, Converter={StaticResource BoolToVis}}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Browse…" Click="OnBrowseKeyFile"
+                                Padding="10,2" Margin="6,0,0,0"/>
+                        <TextBox Text="{Binding SshKeyFile, UpdateSourceTrigger=PropertyChanged}"/>
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Used for SFTP instead of the password. SMB and WebDAV can't use a key, so leave the password filled in if you want Auto to measure all three."/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="Key passphrase"
+                           Visibility="{Binding ShowSshKeyFields, Converter={StaticResource BoolToVis}}"/>
+                <PasswordBox Grid.Row="6" Grid.Column="1" Margin="0,4" x:Name="KeyPassphraseBox"
+                             Visibility="{Binding ShowSshKeyFields, Converter={StaticResource BoolToVis}}"/>
+
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="SSH port"
+                           Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}"/>
+                <StackPanel Grid.Row="7" Grid.Column="1" Margin="0,4"
+                            Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}">
+                    <TextBox Text="{Binding SshPort}" Width="80" HorizontalAlignment="Left"/>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Hetzner's extended SSH service is on 23. Port 22 works for file transfer but has no shell, which disables checksums."/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="8" Grid.Column="0" Text="Host override"
+                           Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}"/>
+                <TextBox   Grid.Row="8" Grid.Column="1" Margin="0,4"
+                           Text="{Binding HostOverride, UpdateSourceTrigger=PropertyChanged}"
+                           Visibility="{Binding IsStorageBox, Converter={StaticResource BoolToVis}}"
+                           ToolTip="Leave blank to use &lt;username&gt;.your-storagebox.de."/>
+
+                <!-- ===== Object Storage fields ===== -->
+                <TextBlock Grid.Row="9" Grid.Column="0" Text="Bucket *"
+                           Visibility="{Binding IsObjectStorage, Converter={StaticResource BoolToVis}}"/>
+                <TextBox   Grid.Row="9" Grid.Column="1" Margin="0,4"
+                           Text="{Binding BucketName, UpdateSourceTrigger=PropertyChanged}"
+                           Visibility="{Binding IsObjectStorage, Converter={StaticResource BoolToVis}}"/>
+
+                <TextBlock Grid.Row="10" Grid.Column="0" Text="Location *"
+                           Visibility="{Binding IsObjectStorage, Converter={StaticResource BoolToVis}}"/>
+                <ComboBox  Grid.Row="10" Grid.Column="1" Margin="0,4"
+                           ItemsSource="{Binding Locations}" DisplayMemberPath="DisplayName"
+                           SelectedValuePath="Code" SelectedValue="{Binding LocationCode}"
+                           Visibility="{Binding IsObjectStorage, Converter={StaticResource BoolToVis}}"/>
+
+                <TextBlock Grid.Row="11" Grid.Column="0" Text="Access key *"
+                           Visibility="{Binding IsObjectStorage, Converter={StaticResource BoolToVis}}"/>
+                <TextBox   Grid.Row="11" Grid.Column="1" Margin="0,4" Text="{Binding AccessKeyId}"
+                           Visibility="{Binding IsObjectStorage, Converter={StaticResource BoolToVis}}"/>
+
+                <TextBlock Grid.Row="12" Grid.Column="0" Text="Secret key *"
+                           Visibility="{Binding IsObjectStorage, Converter={StaticResource BoolToVis}}"/>
+                <PasswordBox Grid.Row="12" Grid.Column="1" Margin="0,4" x:Name="SecretBox"
+                             Visibility="{Binding IsObjectStorage, Converter={StaticResource BoolToVis}}"/>
+
+                <!-- ===== Common ===== -->
+                <TextBlock Grid.Row="13" Grid.Column="0" Text="Sub-path (optional)"/>
+                <TextBox   Grid.Row="13" Grid.Column="1" Margin="0,4" Text="{Binding SubPath}"/>
+
+                <TextBlock Grid.Row="14" Grid.Column="0" Text="Mode" VerticalAlignment="Top" Margin="0,10,10,0"/>
+                <StackPanel Grid.Row="14" Grid.Column="1" Margin="0,4">
+                    <ComboBox ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource ModeToText}}" Margin="0"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{Binding ModeDescription}" Style="{StaticResource Hint}"/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="15" Grid.Column="0" Text="Drive letter *"
+                           Visibility="{Binding IsDriveLetterMode, Converter={StaticResource BoolToVis}}"/>
+                <ComboBox  Grid.Row="15" Grid.Column="1" Margin="0,4"
+                           ItemsSource="{Binding AvailableDriveLetters}" SelectedItem="{Binding DriveLetter}"
+                           Visibility="{Binding IsDriveLetterMode, Converter={StaticResource BoolToVis}}"/>
+
+                <TextBlock Grid.Row="16" Grid.Column="0" Text="Folder location"
+                           VerticalAlignment="Top" Margin="0,10,10,0"
+                           Visibility="{Binding IsOnDemandMode, Converter={StaticResource BoolToVis}}"/>
+                <StackPanel Grid.Row="16" Grid.Column="1" Margin="0,4"
+                            Visibility="{Binding IsOnDemandMode, Converter={StaticResource BoolToVis}}">
+                    <!-- The resolved path, always shown so the location is never a mystery. -->
+                    <TextBox Text="{Binding EffectiveFolderPath, Mode=OneWay}" IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             ToolTip="The folder that will appear in Explorer for this mapping."/>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button Content="Change…" Click="OnBrowseFolder" Padding="12,3" Margin="0,0,6,0"/>
+                        <Button Content="Use default" Click="OnUseDefaultFolder" Padding="12,3"
+                                IsEnabled="{Binding UsesCustomFolder}"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Files appear here as placeholders and download when opened. Pick a location with room for whatever you pin."/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="17" Grid.Column="0" Text="Auto-mount at login"/>
+                <CheckBox  Grid.Row="17" Grid.Column="1" Margin="0,6" IsChecked="{Binding AutoMount}"
+                           VerticalAlignment="Center"/>
+            </Grid>
+
+            <Expander Header="Cache and performance" Margin="0,12,0,0" Foreground="{StaticResource WC.Brush.TextPrimary}">
+                <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Cache mode"/>
+                    <ComboBox  Grid.Row="0" Grid.Column="1" Margin="0,4"
+                               ItemsSource="{Binding CacheModes}" SelectedItem="{Binding CacheMode}"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Cache max size (MiB)"/>
+                    <TextBox   Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding VfsCacheMaxSizeMb}"
+                               ToolTip="0 = unlimited. 1 TiB = 1048576."/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Cache max age (hours)"/>
+                    <TextBox   Grid.Row="2" Grid.Column="1" Margin="0,4" Text="{Binding VfsCacheMaxAgeHours}"
+                               ToolTip="Also the idle window before on-demand files are freed from disk."/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Buffer size (MiB)"/>
+                    <TextBox   Grid.Row="3" Grid.Column="1" Margin="0,4" Text="{Binding BufferSizeMb}"/>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Cache location"/>
+                    <DockPanel Grid.Row="4" Grid.Column="1" Margin="0,4">
+                        <Button DockPanel.Dock="Right" Content="Browse…" Click="OnBrowseCacheDir"
+                                Padding="10,2" Margin="6,0,0,0"/>
+                        <TextBox Text="{Binding CacheDir}"
+                                 ToolTip="Drive-letter mode only. Folder for the on-disk cache. Blank = rclone default."/>
+                    </DockPanel>
+                </Grid>
+            </Expander>
+        </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

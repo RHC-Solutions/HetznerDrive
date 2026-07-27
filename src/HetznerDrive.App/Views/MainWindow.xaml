@@ -1,0 +1,133 @@
+<Window x:Class="HetznerDrive.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        xmlns:conv="clr-namespace:HetznerDrive.App.Views"
+        mc:Ignorable="d"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="HetznerDrive" Height="620" Width="960" MinWidth="720" MinHeight="440"
+        Icon="/Assets/hetznerdrive.ico"
+        Background="{StaticResource WC.Brush.BgPrimary}"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <conv:NullToBoolConverter x:Key="NullToBool"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- Right-click menu for a mapping row. Binding through PlacementTarget is what makes the
+             shared menu instance act on the row that opened it rather than a stale DataContext. -->
+        <ContextMenu x:Key="MappingRowMenu"
+                     DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+            <MenuItem Header="Mount" Command="{Binding MountCommand}" FontWeight="SemiBold"/>
+            <MenuItem Header="Unmount" Command="{Binding UnmountCommand}"/>
+            <Separator/>
+            <MenuItem Header="Edit…" Click="OnEdit"/>
+            <MenuItem Header="Delete" Click="OnDelete"/>
+            <Separator/>
+            <MenuItem Header="Open in Explorer" Command="{Binding OpenInExplorerCommand}"/>
+            <MenuItem Header="Copy location" Command="{Binding CopyPathCommand}"/>
+        </ContextMenu>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="120"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="200" MinHeight="90"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Style="{StaticResource WC.Bar}" BorderThickness="0,0,0,1" Padding="20,14">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Style="{StaticResource WC.AccentBar}" Height="26" Margin="0,0,12,0"/>
+                    <Image Source="/Assets/logo.png" Width="24" Height="24" Margin="0,0,10,0"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="HetznerDrive" Style="{StaticResource WC.Heading}"/>
+                        <TextBlock Text="Storage Box &amp; Object Storage as Windows drives and on-demand folders"
+                                   Style="{StaticResource WC.Subtitle}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="+ Add" Click="OnAdd" Style="{StaticResource WC.Button.Accent}" Margin="0,0,8,0"/>
+                    <Button Content="Edit" Click="OnEdit" Margin="0,0,8,0"
+                            IsEnabled="{Binding SelectedMapping, Converter={StaticResource NullToBool}}"/>
+                    <Button Content="Delete" Click="OnDelete" Style="{StaticResource WC.Button.Danger}" Margin="0,0,8,0"
+                            IsEnabled="{Binding SelectedMapping, Converter={StaticResource NullToBool}}"/>
+                    <Button Content="Settings" Click="OnSettings" Margin="0,0,8,0"/>
+                    <Button Content="About" Click="OnAbout"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- rclone / WinFsp warning banner -->
+        <Border Grid.Row="1" Background="#33FBBF24" BorderBrush="{StaticResource WC.Brush.Warning}" BorderThickness="1"
+                Padding="12,8" Margin="16,12,16,0"
+                Visibility="{Binding HasStartupWarning, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding StartupWarning}" TextWrapping="Wrap" Foreground="{StaticResource WC.Brush.Warning}"/>
+        </Border>
+
+        <!-- Mappings list -->
+        <ListView Grid.Row="2" Margin="16,12,16,0" Background="Transparent" BorderBrush="{StaticResource WC.Brush.Border}"
+                  ItemsSource="{Binding Mappings}" SelectedItem="{Binding SelectedMapping}"
+                  PreviewMouseRightButtonDown="OnListPreviewRightClick">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem" BasedOn="{StaticResource WC.MappingRow}">
+                    <Setter Property="ContextMenu" Value="{StaticResource MappingRowMenu}"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Name" Width="130" DisplayMemberBinding="{Binding Name}"/>
+                    <GridViewColumn Header="Source" Width="150" DisplayMemberBinding="{Binding Source}"/>
+                    <GridViewColumn Header="Protocol" Width="120" DisplayMemberBinding="{Binding ProtocolText}"/>
+                    <GridViewColumn Header="Mode" Width="85" DisplayMemberBinding="{Binding ModeText}"/>
+                    <GridViewColumn Header="Location" Width="150" DisplayMemberBinding="{Binding Location}"/>
+                    <GridViewColumn Header="Status" Width="95" DisplayMemberBinding="{Binding StateText}"/>
+                    <GridViewColumn Header="" Width="170">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Mount" Command="{Binding MountCommand}"
+                                            Style="{StaticResource WC.Button.Accent}"
+                                            Padding="10,3" Margin="0,0,6,0" MinWidth="72"/>
+                                    <Button Content="Unmount" Command="{Binding UnmountCommand}"
+                                            Padding="10,3" MinWidth="72"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- Drag handle to resize the activity log -->
+        <GridSplitter Grid.Row="3" Height="8" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                      Background="Transparent" ResizeBehavior="PreviousAndNext" ResizeDirection="Rows"
+                      Margin="16,4"/>
+
+        <!-- Activity log -->
+        <Border Grid.Row="4" Style="{StaticResource WC.Bar}" BorderThickness="1" CornerRadius="8"
+                Margin="16,0,16,16">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Background="{StaticResource WC.Brush.BgTertiary}"
+                        CornerRadius="8,8,0,0" Padding="12,6">
+                    <TextBlock Text="Activity log" Foreground="{StaticResource WC.Brush.TextSecondary}"
+                               FontWeight="SemiBold" FontSize="12"/>
+                </Border>
+                <TextBox x:Name="LogBox" Text="{Binding LogText, Mode=OneWay}" IsReadOnly="True"
+                         Background="#FF121218"
+                         Foreground="#FFDCDCDC" BorderThickness="0"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         FontFamily="{StaticResource WC.Font.Mono}" FontSize="12" TextWrapping="NoWrap"
+                         Padding="10,6"
+                         TextChanged="OnLogTextChanged" ScrollViewer.ScrollChanged="OnLogScrollChanged"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
