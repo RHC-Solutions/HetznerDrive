@@ -30,6 +30,16 @@ public partial class App : Application
             return;
         }
 
+        // Elevated helper: this copy was relaunched by ServiceSync with the runas verb purely to
+        // touch machine-wide state. No UI, no mutex, no mounts — do the work and report via exit code.
+        var applyIdx = Array.FindIndex(e.Args, a => a.Equals(ServiceSync.Switch, StringComparison.OrdinalIgnoreCase));
+        if (applyIdx >= 0 && e.Args.Length > applyIdx + 1
+            && Enum.TryParse<ServiceAction>(e.Args[applyIdx + 1], ignoreCase: true, out var action))
+        {
+            Shutdown(ServiceSync.Apply(action));
+            return;
+        }
+
         // Explorer right-click verb: run the action standalone (no UI, no single-instance lock) and exit.
         var shellIdx = Array.FindIndex(e.Args, a => a.Equals("--shell", StringComparison.OrdinalIgnoreCase));
         if (shellIdx >= 0 && e.Args.Length >= shellIdx + 3)

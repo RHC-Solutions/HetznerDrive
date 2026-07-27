@@ -125,8 +125,8 @@ internal static class ShellCommand
             var folder = OnDemandSyncManager.ResolveFolderPath(mapping);
             return folder.TrimEnd('\\') + "\\";
         }
-        // Drive letter, e.g. "H:\".
-        return mapping.DriveTarget.TrimEnd('\\') + "\\";
+        // A drive letter ("H:\") or a directory mountpoint — both root the same way.
+        return mapping.MountPoint.TrimEnd('\\') + "\\";
     }
 
     private static HetznerCredentials? LoadCredentials(Guid mappingId)

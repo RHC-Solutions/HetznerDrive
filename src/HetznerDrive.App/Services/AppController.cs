@@ -54,7 +54,7 @@ public sealed class AppController
     public IReadOnlyCollection<string> GetShellRoots() =>
         Mappings.Select(m => m.Model.Mode == MappingMode.OnDemandFolder
                 ? OnDemandSyncManager.ResolveFolderPath(m.Model)
-                : m.Model.DriveTarget)
+                : m.Model.MountPoint)
             .Where(r => !string.IsNullOrWhiteSpace(r))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
@@ -117,6 +117,35 @@ public sealed class AppController
         MappingsChanged?.Invoke();
     }
 
+    /// <summary>
+    /// True when the machine-wide state the service reads is out of step with what is configured
+    /// here, so the UI can prompt for the one elevated step rather than silently diverging.
+    /// </summary>
+    public bool ServiceNeedsPublish()
+    {
+        try
+        {
+            var published = new ServiceConfigStore().LoadMappings()
+                .Select(m => m.Id).ToHashSet();
+            var wanted = Mappings.Select(m => m.Model)
+                .Where(m => m is { RunAsService: true, Mode: MappingMode.DriveLetter })
+                .Select(m => m.Id).ToHashSet();
+            return !published.SetEquals(wanted);
+        }
+        catch
+        {
+            // Unreadable machine state (no service installed yet, or no permission) is not a
+            // mismatch worth nagging about.
+            return false;
+        }
+    }
+
+    /// <summary>Mappings currently marked for the Windows service.</summary>
+    public IReadOnlyList<Mapping> ServiceMappings =>
+        Mappings.Select(m => m.Model)
+            .Where(m => m is { RunAsService: true, Mode: MappingMode.DriveLetter })
+            .ToList();
+
     public async Task DeleteMappingAsync(MappingViewModel vm)
     {
         await UnmountAsync(vm).ConfigureAwait(true);
@@ -130,6 +159,13 @@ public sealed class AppController
 
     public async Task MountAsync(MappingViewModel vm, bool openFolder = true)
     {
+        // A service-hosted mapping is mounted by the service. Doing it here as well would have two
+        // rclone processes racing for one mountpoint, so the app defers rather than competing.
+        if (vm.Model.RunAsService)
+            throw new InvalidOperationException(
+                "This mapping is mounted by the HetznerDrive Windows service. Use the service "
+                + "controls in Settings, or untick the service option on the mapping.");
+
         var creds = _credentialStore.Get(vm.Model.Id)
             ?? throw new InvalidOperationException("No saved credentials for this mapping.");
 
@@ -272,7 +308,7 @@ public sealed class AppController
     /// <summary>Mounts every mapping flagged <see cref="Mapping.AutoMount"/>. Used at logon.</summary>
     public async Task MountAutoAsync()
     {
-        foreach (var vm in Mappings.Where(m => m.Model.AutoMount))
+        foreach (var vm in Mappings.Where(m => m.Model is { AutoMount: true, RunAsService: false }))
         {
             try { await MountAsync(vm, openFolder: false).ConfigureAwait(true); }
             catch (Exception ex) { AppendLog($"Auto-mount of {vm.Location} failed: {ex.Message}"); }

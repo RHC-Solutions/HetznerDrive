@@ -79,14 +79,40 @@ Run §3 and §4 once for **each** of SFTP, SMB and WebDAV by pinning the protoco
 | 6.3 | **Copy share link** on a file | A presigned URL is copied and opens in a browser |
 | 6.4 | Try to select SFTP for it | Not offered in the UI |
 
-## 7. App lifecycle
+## 7. Windows service mode
+
+Needs an administrator account. Every step below asks for UAC approval.
 
 | # | Step | Expected |
 |---|------|----------|
-| 7.1 | Enable **Start at login**, sign out and back in | App starts in the tray; auto-mount mappings mount without a window |
-| 7.2 | Close the window | Hides to tray |
-| 7.3 | Tray → Exit | All mappings unmount; process exits |
-| 7.4 | Export settings, delete a mapping, import | Mapping returns; credentials must be re-entered |
-| 7.5 | Inspect `%LOCALAPPDATA%\HetznerDrive\mappings.json` | Contains no password, key or secret |
-| 7.6 | Inspect `credentials.dat` in a hex editor | No plaintext secret |
-| 7.7 | Run **About → Check for updates** | Reports up to date, or offers the newer release |
+| 7.1 | Edit a drive mapping, set **Attach as** to a folder mountpoint, tick *Mount with the Windows service*, Save | Saves; the mapping's Location column shows the folder path |
+| 7.2 | Try the same on a Files On-Demand mapping | Rejected in the dialog — Cloud Files needs an interactive session |
+| 7.3 | Tick the service option while **Attach as** is a drive letter | Rejected — a letter mounted from session 0 is invisible |
+| 7.4 | Point the mountpoint at a folder that already exists | Rejected — WinFsp creates the folder itself |
+| 7.5 | **Settings → Windows service → Install**, approve UAC | Status becomes *Installed and running*; the folder appears and is browsable |
+| 7.6 | Press **Mount** on that mapping in the main window | Refused with an explanation — the service owns it |
+| 7.7 | Sign out and back in | The mountpoint was there throughout (check from another session or via a scheduled task) |
+| 7.8 | Reboot without signing in, then check from a remote session or a startup script | The mountpoint exists before any interactive logon |
+| 7.9 | Edit the mapping's cache settings, then **Apply changes** | Service restarts and remounts; activity visible in the service log |
+| 7.10 | Edit the mapping but *don't* apply | Settings shows *Changes are pending* |
+| 7.11 | `sc.exe query HetznerDrive` | Running, `START_TYPE : 2 AUTO_START`, `SERVICE_START_NAME : LocalSystem` |
+| 7.12 | Inspect `%ProgramData%\HetznerDrive` permissions | Only SYSTEM and Administrators |
+| 7.13 | As a *standard* user, try to read `service-credentials.dat` | Access denied |
+| 7.14 | Search the file for the password | Not present in plaintext |
+| 7.15 | Kill `rclone.exe` for a serviced mount | Remounted automatically (immediately via the restart budget, or within 5 minutes by the sweep) |
+| 7.16 | Stop the service | Mountpoints disappear |
+| 7.17 | **Uninstall** from Settings | Service gone from `sc query`; `%ProgramData%\HetznerDrive` config files removed; mapping still listed in the app |
+| 7.18 | Approve a UAC prompt as a *different* administrator | Clear message that credentials could not be read, rather than a silently empty publish |
+| 7.19 | Install the service, then uninstall the app itself | The service is removed too (the installer's UninstallRun) |
+
+## 8. App lifecycle
+
+| # | Step | Expected |
+|---|------|----------|
+| 8.1 | Enable **Start at login**, sign out and back in | App starts in the tray; auto-mount mappings mount without a window |
+| 8.2 | Close the window | Hides to tray |
+| 8.3 | Tray → Exit | All mappings unmount; process exits |
+| 8.4 | Export settings, delete a mapping, import | Mapping returns; credentials must be re-entered |
+| 8.5 | Inspect `%LOCALAPPDATA%\HetznerDrive\mappings.json` | Contains no password, key or secret |
+| 8.6 | Inspect `credentials.dat` in a hex editor | No plaintext secret |
+| 8.7 | Run **About → Check for updates** | Reports up to date, or offers the newer release |

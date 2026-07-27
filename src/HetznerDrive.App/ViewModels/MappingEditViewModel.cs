@@ -48,6 +48,9 @@ public sealed partial class MappingEditViewModel : ObservableObject
         LocationCode = m.LocationCode;
         SubPath = m.SubPath ?? string.Empty;
         AutoMount = m.AutoMount;
+        MountTarget = m.MountTarget;
+        MountDirectory = m.MountDirectory ?? string.Empty;
+        RunAsService = m.RunAsService;
         // New mappings default to the on-demand folder (OneDrive/Google-Drive style); existing
         // mappings keep whatever mode they were saved with.
         Mode = existing?.Mode ?? MappingMode.OnDemandFolder;
@@ -200,9 +203,25 @@ public sealed partial class MappingEditViewModel : ObservableObject
     [ObservableProperty] private bool _autoMount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDirectoryMount))]
+    [NotifyPropertyChangedFor(nameof(IsLetterMount))]
+    [NotifyPropertyChangedFor(nameof(MountTargetDescription))]
+    [NotifyPropertyChangedFor(nameof(EffectiveMountDirectory))]
+    private MountTarget _mountTarget = MountTarget.DriveLetter;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EffectiveMountDirectory))]
+    private string _mountDirectory = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ServiceDescription))]
+    private bool _runAsService;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDriveLetterMode))]
     [NotifyPropertyChangedFor(nameof(IsOnDemandMode))]
     [NotifyPropertyChangedFor(nameof(ModeDescription))]
+    [NotifyPropertyChangedFor(nameof(ShowMountTarget))]
     private MappingMode _mode = MappingMode.OnDemandFolder;
 
     [ObservableProperty]
@@ -230,6 +249,31 @@ public sealed partial class MappingEditViewModel : ObservableObject
     private string _benchmarkResult = string.Empty;
 
     public bool HasBenchmarkResult => !string.IsNullOrWhiteSpace(BenchmarkResult);
+
+    public IReadOnlyList<MountTarget> MountTargets { get; } = Enum.GetValues<MountTarget>();
+
+    public bool IsLetterMount => MountTarget == MountTarget.DriveLetter;
+    public bool IsDirectoryMount => MountTarget == MountTarget.Directory;
+
+    /// <summary>Mount-target options only apply to a drive mapping, not an on-demand folder.</summary>
+    public bool ShowMountTarget => IsDriveLetterMode;
+
+    /// <summary>The directory that will be used, with the default filled in when none is set.</summary>
+    public string EffectiveMountDirectory => string.IsNullOrWhiteSpace(MountDirectory)
+        ? BuildMapping().DefaultMountDirectory
+        : MountDirectory.Trim();
+
+    public string MountTargetDescription => MountTarget == MountTarget.Directory
+        ? @"A folder such as C:\HetznerDrive\Backups. Visible from every session, which is what "
+          + "lets the Windows service host it. WinFsp creates the folder on mount, so it must not "
+          + "already exist."
+        : "A drive letter such as H:. Only exists inside your own logon session — a service "
+          + "cannot provide one.";
+
+    public string ServiceDescription => RunAsService
+        ? "Mounted by the HetznerDrive Windows service, so it is available before you sign in and "
+          + "survives logoff. Requires a directory mountpoint, and administrator approval when saving."
+        : "Mounted by this app while you are signed in.";
 
     /// <summary>Helper text shown under the Mode dropdown explaining the selected mode.</summary>
     public string ModeDescription => Mode == MappingMode.OnDemandFolder
@@ -265,8 +309,30 @@ public sealed partial class MappingEditViewModel : ObservableObject
                 return "Object Storage needs an access key and a secret key.";
         }
 
-        if (IsDriveLetterMode && string.IsNullOrWhiteSpace(DriveLetter))
+        if (IsDriveLetterMode && IsLetterMount && string.IsNullOrWhiteSpace(DriveLetter))
             return "A drive letter is required.";
+        if (IsDriveLetterMode && IsDirectoryMount)
+        {
+            var dir = EffectiveMountDirectory;
+            if (!Path.IsPathFullyQualified(dir))
+                return @"Enter a full path for the mount folder, for example C:\HetznerDrive\Backups.";
+            // WinFsp creates the mountpoint itself and removes it on unmount, so an existing
+            // directory is not merely untidy — the mount will refuse to start.
+            if (Directory.Exists(dir))
+                return $"'{dir}' already exists. A directory mountpoint is created by the mount "
+                     + "itself, so choose a path that does not exist yet.";
+            if (File.Exists(dir))
+                return $"'{dir}' is a file.";
+        }
+        if (RunAsService)
+        {
+            if (!IsDriveLetterMode)
+                return "Files On-Demand folders need an interactive session and cannot be hosted by "
+                     + "the Windows service. Use drive-letter mode, or untick the service option.";
+            if (!IsDirectoryMount)
+                return "The Windows service can only use a directory mountpoint — a drive letter "
+                     + "mounted by a service is invisible to your session.";
+        }
         if (IsOnDemandMode && OnDemandFolderRules.Validate(LocalFolderPath, _otherFolders) is { } folderError)
             return folderError;
         return null;
@@ -304,6 +370,9 @@ public sealed partial class MappingEditViewModel : ObservableObject
         LocationCode = LocationCode,
         SubPath = string.IsNullOrWhiteSpace(SubPath) ? null : SubPath.Trim(),
         DriveLetter = DriveLetter.TrimEnd(':'),
+        MountTarget = MountTarget,
+        MountDirectory = string.IsNullOrWhiteSpace(MountDirectory) ? null : MountDirectory.Trim(),
+        RunAsService = RunAsService && Mode == MappingMode.DriveLetter,
         AutoMount = AutoMount,
         Mode = Mode,
         LocalFolderPath = IsOnDemandMode && !string.IsNullOrWhiteSpace(LocalFolderPath)

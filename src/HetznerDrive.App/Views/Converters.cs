@@ -50,6 +50,18 @@ public sealed class ProtocolToDisplayConverter : IValueConverter
         throw new NotSupportedException();
 }
 
+/// <summary>Friendly label for a <see cref="MountTarget"/>, naming the session consequence.</summary>
+public sealed class MountTargetToDisplayConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is MountTarget.Directory
+            ? "Folder mountpoint (visible to every session)"
+            : "Drive letter (this logon session only)";
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
 /// <summary>True when the bound value is non-null (used to enable Edit/Delete on selection).</summary>
 public sealed class NullToBoolConverter : IValueConverter
 {

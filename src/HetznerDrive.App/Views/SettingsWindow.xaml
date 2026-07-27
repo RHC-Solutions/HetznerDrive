@@ -78,6 +78,22 @@
         </Grid>
 
         <Separator Margin="0,10"/>
+        <TextBlock Text="Windows service" FontWeight="SemiBold" Margin="0,4"/>
+        <TextBlock TextWrapping="Wrap" Margin="0,0,0,6" FontSize="11"
+                   Foreground="{StaticResource WC.Brush.TextSecondary}"
+                   Text="Mounts marked &quot;Mount with the Windows service&quot; are kept available before anyone signs in and survive logoff. They must use a folder mountpoint — a drive letter only exists inside the session that created it. Files On-Demand folders always need an interactive session and cannot be serviced. Installing and updating the service needs administrator approval."/>
+        <TextBlock x:Name="ServiceStatusText" Margin="0,0,0,6" TextWrapping="Wrap" FontWeight="SemiBold"/>
+        <StackPanel Orientation="Horizontal">
+            <Button x:Name="InstallServiceButton" Content="Install / update" Click="OnInstallService"
+                    Style="{StaticResource WC.Button.Accent}" Padding="14,6" Margin="0,0,8,0"/>
+            <Button x:Name="PublishServiceButton" Content="Apply changes" Click="OnPublishService"
+                    Padding="14,6" Margin="0,0,8,0"/>
+            <Button x:Name="UninstallServiceButton" Content="Uninstall" Click="OnUninstallService"
+                    Style="{StaticResource WC.Button.Danger}" Padding="14,6" Margin="0,0,8,0"/>
+            <Button Content="Service logs" Click="OnOpenServiceLogs" Padding="14,6"/>
+        </StackPanel>
+
+        <Separator Margin="0,10"/>
         <TextBlock Text="rclone.exe path (leave blank to auto-detect)" Margin="0,4"/>
         <TextBox Text="{Binding RcloneExePath}" Margin="0,4"/>
 

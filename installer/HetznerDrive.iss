@@ -3,7 +3,9 @@
 ; (Inno Setup 6+, https://jrsoftware.org/isdl.php). scripts\build-installer.ps1 does both.
 
 #define AppName "HetznerDrive"
-#define AppVersion "0.1.0"
+#define AppVersion "0.2.0"
+; Must match ServiceControl.ServiceName.
+#define ServiceName "HetznerDrive"
 #define AppPublisher "RHC Solutions"
 #define AppPublisherUrl "https://rhcsolutions.com/"
 #define PublishDir "..\src\HetznerDrive.App\bin\Release\net8.0-windows10.0.19041.0\win-x64\publish"
@@ -53,6 +55,14 @@ Filename: "msiexec.exe"; Parameters: "/i ""{tmp}\winfsp.msi"" /qn /norestart"; \
 ; Offer to launch the app after install.
 Filename: "{app}\HetznerDrive.exe"; Description: "Launch HetznerDrive"; \
   Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+; The Windows service is registered by the app on demand, not by this installer, but it points at
+; an exe inside {app}. Leaving it behind after uninstall would give Windows a service that fails to
+; start forever, so stop and delete it here. Both are no-ops when it was never installed; exit codes
+; are ignored deliberately, since a per-user uninstall has no rights to touch services at all.
+Filename: "sc.exe"; Parameters: "stop {#ServiceName}"; Flags: runhidden; RunOnceId: "StopService"
+Filename: "sc.exe"; Parameters: "delete {#ServiceName}"; Flags: runhidden; RunOnceId: "DeleteService"
 
 [Code]
 function IsWinFspInstalled(): Boolean;

@@ -50,7 +50,7 @@ public sealed partial class MappingViewModel : ObservableObject
     /// <summary>Drive letter for drive mode, or the on-demand folder path.</summary>
     public string Location => Model.Mode == MappingMode.OnDemandFolder
         ? OnDemandSyncManager.ResolveFolderPath(Model)
-        : Model.DriveTarget;
+        : Model.MountPoint;
 
     public bool IsMounted => State == MountState.Mounted;
     public bool IsBusy => State is MountState.Mounting or MountState.Unmounting;

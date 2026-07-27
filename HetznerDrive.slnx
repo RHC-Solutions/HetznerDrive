@@ -3,6 +3,7 @@
     <Project Path="src/HetznerDrive.App/HetznerDrive.App.csproj" />
     <Project Path="src/HetznerDrive.CloudFiles/HetznerDrive.CloudFiles.csproj" />
     <Project Path="src/HetznerDrive.Core/HetznerDrive.Core.csproj" />
+    <Project Path="src/HetznerDrive.Service/HetznerDrive.Service.csproj" />
     <Project Path="src/HetznerDrive.Tests/HetznerDrive.Tests.csproj" />
   </Folder>
 </Solution>

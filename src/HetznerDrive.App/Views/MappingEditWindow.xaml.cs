@@ -121,6 +121,32 @@ public partial class MappingEditWindow : Window
 
     private void OnUseDefaultFolder(object sender, RoutedEventArgs e) => _vm.UseDefaultFolder();
 
+    /// <summary>
+    /// Picks the parent for the mountpoint and appends a named folder, because the mountpoint
+    /// itself must not exist -- a folder picker can only ever return one that does.
+    /// </summary>
+    private void OnBrowseMountDir(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Choose where the mount folder should be created",
+        };
+        try
+        {
+            var parent = Path.GetDirectoryName(_vm.EffectiveMountDirectory);
+            if (!string.IsNullOrWhiteSpace(parent) && Directory.Exists(parent))
+                dlg.InitialDirectory = parent;
+        }
+        catch { /* the picker's own default is fine */ }
+
+        if (dlg.ShowDialog(this) != true) return;
+
+        var leaf = OnDemandFolderRules.Sanitize(
+            !string.IsNullOrWhiteSpace(_vm.Name) ? _vm.Name : _vm.Username);
+        if (leaf.Length == 0) leaf = "Storage";
+        _vm.MountDirectory = Path.Combine(dlg.FolderName, leaf);
+    }
+
     private void OnBrowseCacheDir(object sender, RoutedEventArgs e)
     {
         var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "Choose cache location" };

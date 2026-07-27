@@ -24,6 +24,26 @@ public enum MappingMode
 }
 
 /// <summary>
+/// Where a <see cref="MappingMode.DriveLetter"/> mapping attaches itself.
+///
+/// This exists because drive letters are per-logon-session. A mount created by a Windows service
+/// running in session 0 is simply not present in the interactive user's namespace, so a mapping
+/// that has to survive with nobody logged in cannot use a letter — it needs a directory mountpoint,
+/// which lives in the global filesystem namespace and is visible from every session.
+/// </summary>
+public enum MountTarget
+{
+    /// <summary>A drive letter such as <c>H:</c>. Only visible in the session that created it.</summary>
+    DriveLetter,
+
+    /// <summary>
+    /// An empty NTFS directory such as <c>C:\HetznerDrive\Backups</c>. Visible from every session,
+    /// which is what makes service-hosted mounts usable.
+    /// </summary>
+    Directory,
+}
+
+/// <summary>
 /// A persisted storage → local mapping. Contains no secret material; the matching
 /// <see cref="HetznerCredentials"/> are looked up separately by <see cref="Id"/>.
 /// </summary>
@@ -81,6 +101,22 @@ public sealed class Mapping
     /// <summary>Drive letter without colon, e.g. "H".</summary>
     public string DriveLetter { get; set; } = "H";
 
+    /// <summary>Whether a drive-letter mapping attaches to a letter or to a directory.</summary>
+    public MountTarget MountTarget { get; set; } = MountTarget.DriveLetter;
+
+    /// <summary>
+    /// Directory mountpoint for <see cref="Models.MountTarget.Directory"/>. WinFsp creates it on
+    /// mount and removes it on unmount, so it must not already exist.
+    /// </summary>
+    public string? MountDirectory { get; set; }
+
+    /// <summary>
+    /// Mount this from the Windows service rather than the tray app, so it survives logoff and is
+    /// present before anyone signs in. Requires <see cref="Models.MountTarget.Directory"/>: a
+    /// letter mounted from session 0 would be invisible to the interactive user.
+    /// </summary>
+    public bool RunAsService { get; set; }
+
     public bool AutoMount { get; set; }
 
     /// <summary>Whether this mapping is a drive-letter mount or an on-demand folder.</summary>
@@ -121,6 +157,36 @@ public sealed class Mapping
     public string RemoteName => "hetzner_" + Id.ToString("N");
 
     public string DriveTarget => DriveLetter.TrimEnd(':') + ":";
+
+    /// <summary>
+    /// What rclone is told to mount onto, and what the readiness check watches for. Both forms
+    /// behave the same way for detection: neither the letter nor the directory exists until WinFsp
+    /// has attached, and both disappear on unmount.
+    /// </summary>
+    public string MountPoint => MountTarget == MountTarget.Directory
+        ? (MountDirectory ?? string.Empty).TrimEnd('\\', '/')
+        : DriveTarget;
+
+    /// <summary>
+    /// Default directory mountpoint for a mapping that switches to service hosting. Placed outside
+    /// any user profile because the service account cannot reach one, and the whole point is that
+    /// the mount is there before a user signs in.
+    /// </summary>
+    public string DefaultMountDirectory
+    {
+        get
+        {
+            var leaf = !string.IsNullOrWhiteSpace(Name) ? Name
+                : Product == HetznerProduct.ObjectStorage && !string.IsNullOrWhiteSpace(BucketName) ? BucketName
+                : !string.IsNullOrWhiteSpace(Username) ? Username
+                : "Storage";
+            foreach (var c in Path.GetInvalidFileNameChars()) leaf = leaf.Replace(c, '_');
+            var root = Path.Combine(
+                Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.System)) ?? @"C:\",
+                "HetznerDrive");
+            return Path.Combine(root, leaf);
+        }
+    }
 
     /// <summary>Sub-path with the separators and edges normalised ("" or "a/b").</summary>
     public string NormalizedSubPath

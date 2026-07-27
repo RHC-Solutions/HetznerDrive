@@ -79,9 +79,11 @@ public sealed class MountManager : IAsyncDisposable
             existing.State is MountState.Mounted or MountState.Mounting)
             return;
 
-        if (IsDriveLetterInUse(mapping.DriveTarget))
-            throw new InvalidOperationException(
-                $"Drive {mapping.DriveTarget} is already in use by another volume.");
+        if (MountPointInUse(mapping))
+            throw new InvalidOperationException(mapping.MountTarget == MountTarget.Directory
+                ? $"'{mapping.MountPoint}' already exists. A directory mountpoint is created by "
+                  + "WinFsp on mount, so it must not be there beforehand."
+                : $"Drive {mapping.MountPoint} is already in use by another volume.");
 
         await ResolveProtocolAsync(mapping, credentials, ct).ConfigureAwait(false);
 
@@ -160,7 +162,7 @@ public sealed class MountManager : IAsyncDisposable
             if (session.State == MountState.Error)
                 throw new InvalidOperationException(
                     session.LastError ?? "rclone exited before the drive became available.");
-            if (DriveIsReady(mapping.DriveTarget))
+            if (MountPointReady(mapping))
             {
                 SetState(session, MountState.Mounted);
                 return;
@@ -170,8 +172,8 @@ public sealed class MountManager : IAsyncDisposable
 
         // Timed out: tear down and report.
         await runner.StopAsync(TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
-        SetState(session, MountState.Error, $"Timed out waiting for {mapping.DriveTarget} to appear.");
-        throw new TimeoutException($"Mounting {mapping.DriveTarget} timed out.");
+        SetState(session, MountState.Error, $"Timed out waiting for {mapping.MountPoint} to appear.");
+        throw new TimeoutException($"Mounting {mapping.MountPoint} timed out.");
     }
 
     private void OnRunnerExited(MountSession session, int exitCode)
@@ -243,13 +245,25 @@ public sealed class MountManager : IAsyncDisposable
     private void Log(Guid mappingId, string line) =>
         LogReceived?.Invoke(this, new MountLogEventArgs { MappingId = mappingId, Line = line });
 
-    private static bool DriveIsReady(string driveTarget)
+    /// <summary>
+    /// True once the mount point has appeared. Both forms are detected the same way, because
+    /// neither exists until WinFsp attaches: a drive letter has no root directory, and a directory
+    /// mountpoint is created by the mount itself (which is also why it must not pre-exist).
+    /// </summary>
+    private static bool MountPointReady(Mapping mapping)
     {
-        try { return Directory.Exists(driveTarget + Path.DirectorySeparatorChar); }
+        var point = mapping.MountPoint;
+        if (string.IsNullOrWhiteSpace(point)) return false;
+        try
+        {
+            return mapping.MountTarget == MountTarget.Directory
+                ? Directory.Exists(point)
+                : Directory.Exists(point + Path.DirectorySeparatorChar);
+        }
         catch { return false; }
     }
 
-    private static bool IsDriveLetterInUse(string driveTarget) => DriveIsReady(driveTarget);
+    private static bool MountPointInUse(Mapping mapping) => MountPointReady(mapping);
 
     public async ValueTask DisposeAsync() => await UnmountAllAsync().ConfigureAwait(false);
 

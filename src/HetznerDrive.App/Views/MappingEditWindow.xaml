@@ -16,6 +16,7 @@
         <conv:MappingModeToDisplayConverter x:Key="ModeToText"/>
         <conv:ProductToDisplayConverter x:Key="ProductToText"/>
         <conv:ProtocolToDisplayConverter x:Key="ProtocolToText"/>
+        <conv:MountTargetToDisplayConverter x:Key="MountTargetToText"/>
         <Style TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Margin" Value="0,0,10,0"/>
@@ -189,11 +190,42 @@
                     <TextBlock Text="{Binding ModeDescription}" Style="{StaticResource Hint}"/>
                 </StackPanel>
 
-                <TextBlock Grid.Row="15" Grid.Column="0" Text="Drive letter *"
-                           Visibility="{Binding IsDriveLetterMode, Converter={StaticResource BoolToVis}}"/>
-                <ComboBox  Grid.Row="15" Grid.Column="1" Margin="0,4"
-                           ItemsSource="{Binding AvailableDriveLetters}" SelectedItem="{Binding DriveLetter}"
-                           Visibility="{Binding IsDriveLetterMode, Converter={StaticResource BoolToVis}}"/>
+                <TextBlock Grid.Row="15" Grid.Column="0" Text="Attach as" VerticalAlignment="Top" Margin="0,10,10,0"
+                           Visibility="{Binding ShowMountTarget, Converter={StaticResource BoolToVis}}"/>
+                <StackPanel Grid.Row="15" Grid.Column="1" Margin="0,4"
+                            Visibility="{Binding ShowMountTarget, Converter={StaticResource BoolToVis}}">
+                    <ComboBox ItemsSource="{Binding MountTargets}" SelectedItem="{Binding MountTarget}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource MountTargetToText}}" Margin="0"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{Binding MountTargetDescription}" Style="{StaticResource Hint}"/>
+
+                    <!-- Drive letter -->
+                    <ComboBox Margin="0,6,0,0" HorizontalAlignment="Left" MinWidth="90"
+                              ItemsSource="{Binding AvailableDriveLetters}" SelectedItem="{Binding DriveLetter}"
+                              Visibility="{Binding IsLetterMount, Converter={StaticResource BoolToVis}}"/>
+
+                    <!-- Directory mountpoint -->
+                    <StackPanel Margin="0,6,0,0"
+                                Visibility="{Binding IsDirectoryMount, Converter={StaticResource BoolToVis}}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Browse…" Click="OnBrowseMountDir"
+                                    Padding="10,2" Margin="6,0,0,0"/>
+                            <TextBox Text="{Binding MountDirectory, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource Hint}">
+                            <Run Text="Will use:"/><Run Text=" "/>
+                            <Run Text="{Binding EffectiveMountDirectory, Mode=OneWay}" FontWeight="SemiBold"/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <CheckBox Content="Mount with the Windows service (available before sign-in)"
+                              IsChecked="{Binding RunAsService}" Margin="0,10,0,0"/>
+                    <TextBlock Text="{Binding ServiceDescription}" Style="{StaticResource Hint}"/>
+                </StackPanel>
 
                 <TextBlock Grid.Row="16" Grid.Column="0" Text="Folder location"
                            VerticalAlignment="Top" Margin="0,10,10,0"

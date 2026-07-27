@@ -42,11 +42,14 @@ public sealed class RcloneRunner : IDisposable
         var c = mapping.Cache;
         var protocol = mapping.EffectiveProtocol;
 
+        if (string.IsNullOrWhiteSpace(mapping.MountPoint))
+            throw new InvalidOperationException("The mapping has no mount point configured.");
+
         var args = new List<string>
         {
             "mount",
             mapping.RemoteTarget,
-            mapping.DriveTarget,
+            mapping.MountPoint,
             "--vfs-cache-mode", c.CacheMode.ToString().ToLowerInvariant(),
             "--dir-cache-time", ToRcloneDuration(c.DirCacheTime),
             "--buffer-size", $"{Math.Max(0, c.BufferSizeMb)}Mi",

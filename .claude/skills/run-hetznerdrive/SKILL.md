@@ -116,6 +116,37 @@ No test file should survive a run. The selector writes
 `.hetznerdrive-speedtest-<guid>.tmp` into the mapping root and deletes it in a `finally`, including
 after a failed protocol — if one is left behind on the Storage Box, that is a bug.
 
+## Verifying service mode
+
+The service is a separate process, so the driver's `health`/`args` commands do not see it. Use:
+
+```powershell
+sc.exe query HetznerDrive                                  # installed? running?
+sc.exe qc HetznerDrive                                     # binPath, LocalSystem, auto-start
+Get-Content "$env:ProgramData\HetznerDrive\logs\*.log" -Tail 40
+Get-CimInstance Win32_Process -Filter "Name='rclone.exe'" | Select-Object CommandLine
+```
+
+An rclone process whose parent is the service mounts to a **folder path**, never a drive letter --
+seeing `H:` in a service-owned command line means the mount-target guard was bypassed and the mount
+is invisible to interactive users.
+
+Configuration lives in `%ProgramData%\HetznerDrive\service-mappings.json`. The directory is ACL'd to
+SYSTEM + Administrators, so read it from an elevated shell. Editing that file directly is a
+legitimate way to test the reconciler: the service watches the directory and converges within the
+debounce window, with a five-minute sweep as a backstop.
+
+Both mutating paths (`Settings -> Windows service`, and saving a serviced mapping) relaunch the app
+elevated via `--service-apply <publish|install|uninstall>`. That switch is scriptable, and it is far
+easier to drive than the dialog:
+
+```powershell
+Start-Process .\HetznerDrive.exe -ArgumentList '--service-apply','publish' -Verb RunAs -Wait
+```
+
+Exit code 3 means the elevated copy could not read the user's DPAPI credentials -- almost always
+because UAC was approved as a different administrator account.
+
 ## Run (human path)
 
 `dotnet run --project src/HetznerDrive.App` opens the window and blocks. Useless for verification;
@@ -155,6 +186,12 @@ where noted.
   to *new* mappings. Confirm with `args`, not with the Settings dialog.
 - **On-demand folders never start rclone**, so `args` reports nothing for them. Verify those through
   the folder itself and the activity log.
+- **A serviced mapping refuses to mount from the app.** That is deliberate -- two rclone processes
+  racing for one mountpoint is worse than a clear refusal. Untick the service option to mount it
+  interactively.
+- **A directory mountpoint must not exist before mounting.** WinFsp creates it and removes it on
+  unmount, so `Directory.Exists` is exactly the readiness check. A leftover folder from a hard kill
+  will block the next mount until it is deleted.
 
 ## Troubleshooting
 
