@@ -24,6 +24,12 @@ env:
 
 jobs:
   build-sign-release:
+    # SignPath is not configured for this repository yet, and a tag push would otherwise fail this
+    # job every time and leave the repo permanently red. Repository variables are readable in a
+    # job-level `if` (secrets are not), so gate on the one that has to be set anyway: until
+    # SIGNPATH_ORGANIZATION_ID exists, tag pushes skip this job and releases are published by hand.
+    # See docs/SIGNING.md.
+    if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
     runs-on: windows-latest
     steps:
       - name: Check out the tagged commit
