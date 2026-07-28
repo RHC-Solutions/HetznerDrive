@@ -60,17 +60,13 @@ Each backend gets flags suited to it rather than one generic set:
 
 ## Download
 
-**[⬇ HetznerDrive-Setup.exe (0.2.0 preview)](https://github.com/RHC-Solutions/HetznerDrive/releases/download/v0.2.0/HetznerDrive-Setup.exe)**
+**[⬇ HetznerDrive-Setup.exe (0.3.0)](https://github.com/RHC-Solutions/HetznerDrive/releases/latest/download/HetznerDrive-Setup.exe)**
 &nbsp;·&nbsp; [All releases](https://github.com/RHC-Solutions/HetznerDrive/releases)
 
 Run the installer; it installs WinFsp automatically if it's missing. Windows 10/11 x64.
 
-> 0.2.0 is a **prerelease**: unsigned, so SmartScreen will warn, and not yet tested against real
-> Hetzner hardware. Two things follow from the prerelease flag and are expected, not bugs — the
-> `releases/latest/download/…` shortcut does not resolve, and the in-app updater (which queries the
-> *latest* release) will not offer it. Both start working with the first stable release, at which
-> point the link above becomes
-> `releases/latest/download/HetznerDrive-Setup.exe`.
+> **The installer is not code-signed yet**, so SmartScreen will warn the first time you run it —
+> *More info → Run anyway*. See [Code signing](#code-signing) for where that stands.
 
 ## How it works
 
@@ -250,5 +246,7 @@ See [docs/TESTING.md](docs/TESTING.md) for the manual smoke-test checklist.
 
 ## Code signing
 
-Release binaries are signed via [SignPath.io](https://signpath.io) so Windows SmartScreen trusts
-them. Signing runs in CI on tagged releases — see [docs/SIGNING.md](docs/SIGNING.md).
+Releases are **not signed yet**. The CI job that signs via [SignPath.io](https://signpath.io) is
+written and pinned, but it stays skipped until this repository's SignPath organisation ID and API
+token are set — so today's installers will trip SmartScreen. See
+[docs/SIGNING.md](docs/SIGNING.md).
