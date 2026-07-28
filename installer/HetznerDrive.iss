@@ -3,7 +3,7 @@
 ; (Inno Setup 6+, https://jrsoftware.org/isdl.php). scripts\build-installer.ps1 does both.
 
 #define AppName "HetznerDrive"
-#define AppVersion "0.2.0"
+#define AppVersion "0.3.0"
 ; Must match ServiceControl.ServiceName.
 #define ServiceName "HetznerDrive"
 #define AppPublisher "RHC Solutions"
