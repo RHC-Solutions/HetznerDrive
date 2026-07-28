@@ -26,19 +26,19 @@ public enum MappingMode
 /// <summary>
 /// Where a <see cref="MappingMode.DriveLetter"/> mapping attaches itself.
 ///
-/// This exists because drive letters are per-logon-session. A mount created by a Windows service
-/// running in session 0 is simply not present in the interactive user's namespace, so a mapping
-/// that has to survive with nobody logged in cannot use a letter — it needs a directory mountpoint,
-/// which lives in the global filesystem namespace and is visible from every session.
+/// Both forms work under the Windows service. A drive letter is normally per-logon-session, but
+/// the service runs as LocalSystem and a DOS device created by SYSTEM is written to the global
+/// namespace, so interactive users see it too. The forms differ in behaviour, not in reach:
+/// only a letter can be presented as a network drive (see <c>--network-mode</c> in
+/// <see cref="RcloneRunner.BuildMountArguments"/>).
 /// </summary>
 public enum MountTarget
 {
-    /// <summary>A drive letter such as <c>H:</c>. Only visible in the session that created it.</summary>
+    /// <summary>A drive letter such as <c>H:</c>, mounted as a network drive.</summary>
     DriveLetter,
 
     /// <summary>
-    /// An empty NTFS directory such as <c>C:\HetznerDrive\Backups</c>. Visible from every session,
-    /// which is what makes service-hosted mounts usable.
+    /// An empty NTFS directory such as <c>C:\HetznerDrive\Backups</c>, mounted as a fixed disk.
     /// </summary>
     Directory,
 }
@@ -112,8 +112,8 @@ public sealed class Mapping
 
     /// <summary>
     /// Mount this from the Windows service rather than the tray app, so it survives logoff and is
-    /// present before anyone signs in. Requires <see cref="Models.MountTarget.Directory"/>: a
-    /// letter mounted from session 0 would be invisible to the interactive user.
+    /// present before anyone signs in. Requires <see cref="MappingMode.DriveLetter"/> — a Files
+    /// On-Demand sync root lives in a user profile and has no session-0 equivalent.
     /// </summary>
     public bool RunAsService { get; set; }
 

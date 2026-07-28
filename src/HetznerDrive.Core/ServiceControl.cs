@@ -32,8 +32,7 @@ public static class ServiceControl
     public const string DisplayName = "HetznerDrive mount service";
 
     private const string Description =
-        "Keeps HetznerDrive directory mountpoints available to every session, including before "
-        + "any user signs in.";
+        "Keeps HetznerDrive mounts available to every session, including before any user signs in.";
 
     /// <summary>Executable name of the service host, alongside the app.</summary>
     public const string ServiceExeName = "HetznerDrive.Service.exe";

@@ -47,6 +47,38 @@ public class ServiceModeTests
     }
 
     [Fact]
+    public void MountArguments_OmitNetworkModeForADirectoryMountpoint()
+    {
+        // rclone does not fail on the combination, it logs "Ignoring --network-mode as it is not
+        // supported with directory mountpoint" at ERROR and mounts as a fixed disk. Sending the
+        // flag anyway would put a red line in the activity log on every service mount.
+        var args = RcloneRunner.BuildMountArguments(DirectoryMapping(@"C:\HetznerDrive\Backups"));
+
+        Assert.DoesNotContain("--network-mode", args);
+    }
+
+    [Fact]
+    public void MountArguments_KeepNetworkModeForAServicedDriveLetter()
+    {
+        // A letter mounted by the service is legitimate: LocalSystem writes the DOS device to the
+        // global namespace, so it is visible in interactive sessions and still wants network mode.
+        var mapping = new Mapping
+        {
+            Name = "Backups",
+            Username = "u123456",
+            Mode = MappingMode.DriveLetter,
+            MountTarget = MountTarget.DriveLetter,
+            DriveLetter = "H",
+            RunAsService = true,
+        };
+
+        var args = RcloneRunner.BuildMountArguments(mapping);
+
+        Assert.Equal("H:", args[2]);
+        Assert.Contains("--network-mode", args);
+    }
+
+    [Fact]
     public void MountArguments_RejectAnEmptyMountPoint()
     {
         // Directory target with nothing configured: catching it here beats rclone failing with

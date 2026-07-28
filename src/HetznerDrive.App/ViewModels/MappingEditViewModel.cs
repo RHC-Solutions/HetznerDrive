@@ -264,15 +264,15 @@ public sealed partial class MappingEditViewModel : ObservableObject
         : MountDirectory.Trim();
 
     public string MountTargetDescription => MountTarget == MountTarget.Directory
-        ? @"A folder such as C:\HetznerDrive\Backups. Visible from every session, which is what "
-          + "lets the Windows service host it. WinFsp creates the folder on mount, so it must not "
-          + "already exist."
-        : "A drive letter such as H:. Only exists inside your own logon session — a service "
-          + "cannot provide one.";
+        ? @"A folder such as C:\HetznerDrive\Backups. Visible from every session. WinFsp creates "
+          + "the folder on mount, so it must not already exist."
+        : "A drive letter such as H:, shown in Explorer as a network drive so deletes bypass the "
+          + "Recycle Bin.";
 
     public string ServiceDescription => RunAsService
         ? "Mounted by the HetznerDrive Windows service, so it is available before you sign in and "
-          + "survives logoff. Requires a directory mountpoint, and administrator approval when saving."
+          + "survives logoff. The service runs as LocalSystem, which makes its mount visible to "
+          + "every account on this PC. Saving needs administrator approval."
         : "Mounted by this app while you are signed in.";
 
     /// <summary>Helper text shown under the Mode dropdown explaining the selected mode.</summary>
@@ -324,15 +324,9 @@ public sealed partial class MappingEditViewModel : ObservableObject
             if (File.Exists(dir))
                 return $"'{dir}' is a file.";
         }
-        if (RunAsService)
-        {
-            if (!IsDriveLetterMode)
-                return "Files On-Demand folders need an interactive session and cannot be hosted by "
-                     + "the Windows service. Use drive-letter mode, or untick the service option.";
-            if (!IsDirectoryMount)
-                return "The Windows service can only use a directory mountpoint — a drive letter "
-                     + "mounted by a service is invisible to your session.";
-        }
+        if (RunAsService && !IsDriveLetterMode)
+            return "Files On-Demand folders need an interactive session and cannot be hosted by "
+                 + "the Windows service. Use drive-letter mode, or untick the service option.";
         if (IsOnDemandMode && OnDemandFolderRules.Validate(LocalFolderPath, _otherFolders) is { } folderError)
             return folderError;
         return null;

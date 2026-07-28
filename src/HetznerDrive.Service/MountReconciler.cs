@@ -125,8 +125,11 @@ public sealed class MountReconciler : IAsyncDisposable
 
     /// <summary>
     /// Rejects configurations the service cannot honour, rather than failing obscurely later.
-    /// A drive letter is the important one: mounted from session 0 it would be invisible to every
-    /// interactive user, so the mount would "succeed" and appear broken.
+    ///
+    /// A drive letter is fine here, despite drive letters normally being per-logon-session: the
+    /// service runs as LocalSystem, and a DOS device created by SYSTEM lands in the global
+    /// namespace, so the letter is visible to every interactive user. Only the mountpoint being
+    /// absent is fatal.
     /// </summary>
     private bool IsServiceable(Mapping mapping)
     {
@@ -137,16 +140,16 @@ public sealed class MountReconciler : IAsyncDisposable
                 mapping.Name);
             return false;
         }
-        if (mapping.MountTarget != MountTarget.Directory)
+        // MountPoint is never blank for a letter target — an unset letter still yields ":" — so the
+        // two forms have to be checked at the source rather than through it.
+        var isDirectory = mapping.MountTarget == MountTarget.Directory;
+        var configured = isDirectory
+            ? !string.IsNullOrWhiteSpace(mapping.MountDirectory)
+            : !string.IsNullOrWhiteSpace(mapping.DriveLetter?.TrimEnd(':'));
+        if (!configured)
         {
-            _logger.LogWarning(
-                "Skipping '{Name}': drive letters are per-session, so a service mount would be invisible. "
-                + "Switch it to a directory mountpoint.", mapping.Name);
-            return false;
-        }
-        if (string.IsNullOrWhiteSpace(mapping.MountDirectory))
-        {
-            _logger.LogWarning("Skipping '{Name}': no mount directory is configured.", mapping.Name);
+            _logger.LogWarning("Skipping '{Name}': no {Target} is configured.",
+                mapping.Name, isDirectory ? "mount directory" : "drive letter");
             return false;
         }
         return true;

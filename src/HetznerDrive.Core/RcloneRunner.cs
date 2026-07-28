@@ -55,12 +55,20 @@ public sealed class RcloneRunner : IDisposable
             "--buffer-size", $"{Math.Max(0, c.BufferSizeMb)}Mi",
             "--volname", VolumeName(mapping),
             "--no-console",
-            // Present the drive as a network drive. Windows never uses a Recycle Bin on network
-            // drives, so deletes become real remote deletes instead of a server-side copy into a
-            // hidden "$RECYCLE.BIN" folder that keeps consuming quota. Also makes folder deletes work.
-            "--network-mode",
             "--log-level", verbose ? "DEBUG" : "INFO",
         };
+
+        // Present a drive letter as a network drive. Windows never uses a Recycle Bin on network
+        // drives, so deletes become real remote deletes instead of a server-side copy into a hidden
+        // "$RECYCLE.BIN" folder that keeps consuming quota. Also makes folder deletes work.
+        //
+        // A directory mountpoint cannot have it. Windows will not point a junction at a network
+        // device, so rclone refuses the combination — but it refuses quietly, logging
+        // "Ignoring --network-mode as it is not supported with directory mountpoint" at ERROR and
+        // mounting as a fixed disk regardless. Passing it there only puts a red line in the
+        // activity log for a flag that was never going to apply.
+        if (mapping.MountTarget == MountTarget.DriveLetter)
+            args.Add("--network-mode");
 
         if (c.CacheMode != VfsCacheMode.Off)
         {

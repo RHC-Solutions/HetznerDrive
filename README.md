@@ -102,14 +102,22 @@ By default mappings mount in your interactive session, which means they disappea
 mapping can instead be handed to the **HetznerDrive Windows service**, which runs as LocalSystem and
 starts at boot.
 
-Two constraints are not workarounds but consequences of how Windows works, and the app enforces both
-rather than letting you discover them as silent failures:
+Both mountpoint forms work under the service — a drive letter such as `H:` or a folder such as
+`C:\HetznerDrive\Backups`. Drive letters are normally per-logon-session, but the service runs as
+LocalSystem, and a DOS device created by SYSTEM is written to the global namespace, so the letter
+shows up in every interactive session. That in turn means the mount is visible to *every* account
+on the machine, not only yours; on a shared PC, prefer a folder mountpoint on an ACL'd path.
+
+One constraint is not a workaround but a consequence of how Windows works, and the app enforces it
+rather than letting you discover it as a silent failure:
 
 - **Files On-Demand folders can never be serviced.** The Cloud Files API registers a sync root
   inside a user profile and calls back into that user's session. There is no session-0 equivalent.
-- **A service mount cannot use a drive letter.** Drive letters are per-logon-session, so `H:`
-  mounted from session 0 is simply absent from your namespace. Service mappings therefore use a
-  **folder mountpoint**, which lives in the global filesystem namespace and is visible everywhere.
+
+The two mountpoint forms are not otherwise interchangeable. A drive letter is mounted with
+`--network-mode`, which is what keeps Windows from routing deletes through a `$RECYCLE.BIN` folder
+that would go on consuming Storage Box quota. Windows will not point a junction at a network
+device, so a folder mountpoint is always a fixed disk and does get a Recycle Bin.
 
 Set it up in **Settings → Windows service → Install**, then tick *Mount with the Windows service* on
 a drive mapping. Both steps ask for administrator approval, because registering a service and

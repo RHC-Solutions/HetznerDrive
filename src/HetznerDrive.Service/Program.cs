@@ -6,9 +6,9 @@ using Microsoft.Extensions.Logging;
 
 // Host for the HetznerDrive Windows service.
 //
-// Runs as LocalSystem so its mounts exist before anyone signs in. It only ever mounts to directory
-// mountpoints: a drive letter created in session 0 is invisible to interactive users, which would
-// look like a silent failure rather than a configuration mistake.
+// Runs as LocalSystem, for two reasons: its mounts exist before anyone signs in, and a mountpoint
+// created by SYSTEM goes into the global namespace, so both drive letters and directory
+// mountpoints are visible from every interactive session rather than only from session 0.
 //
 // It can also be run directly from a console for troubleshooting, which is far easier than
 // attaching a debugger to a service.
